@@ -1,0 +1,1 @@
+"""Typed shared state models."""
