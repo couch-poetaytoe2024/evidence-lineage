@@ -1,0 +1,40 @@
+{
+  "case_id": "synthetic_nsx4_drift_v1",
+  "fictional": true,
+  "target_claim": "NSX-4 extends lithium-ion battery life by 20-30%.",
+  "expected_final_verdict": "UNSUPPORTED",
+  "expected_drift": true,
+  "expected_chain": ["EL-SYN-A", "EL-SYN-B", "EL-SYN-C", "EL-SYN-D"],
+  "critical_evidence": ["EL-SYN-E"],
+  "expected_findings": [
+    {
+      "type": "certainty_inflation",
+      "from": "EL-SYN-A",
+      "to": "EL-SYN-D",
+      "description": "may improve short-term retention becomes validated life-extension technology"
+    },
+    {
+      "type": "metric_drift",
+      "description": "capacity retention at cycle 100 becomes total battery lifetime"
+    },
+    {
+      "type": "magnitude_inflation",
+      "description": "+6 percentage points / about 7.3% relative retention difference becomes 20-30% longer life"
+    },
+    {
+      "type": "indirect_citation",
+      "description": "later claims cite reviews/follow-ups instead of the primary experiment"
+    },
+    {
+      "type": "citation_bias",
+      "description": "larger null replication EL-SYN-E is omitted from EL-SYN-C and EL-SYN-D"
+    }
+  ],
+  "paper_labels": {
+    "EL-SYN-A": "PRELIMINARY_SUPPORT",
+    "EL-SYN-B": "FAIR_SUMMARY_WITH_CAUTION",
+    "EL-SYN-C": "OVERSTATED",
+    "EL-SYN-D": "UNSUPPORTED",
+    "EL-SYN-E": "CRITICAL_REPLICATION"
+  }
+}
