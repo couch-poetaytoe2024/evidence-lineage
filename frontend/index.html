@@ -3,35 +3,87 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>EvidenceLineage</title>
+  <meta name="description" content="EvidenceLineage traces scientific claims through their citation history.">
+  <title>EvidenceLineage · Scientific Claim Auditor</title>
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-  <main>
-    <header>
-      <p class="eyebrow">MULTI-AGENT SCIENTIFIC CLAIM AUDITOR</p>
-      <h1>Evidence<span>Lineage</span></h1>
-      <p class="lede">Trace a paper's claims backward through its references and inspect whether the retrieved evidence supports what was said.</p>
+  <div class="page-frame">
+    <header class="topbar">
+      <a class="brand" href="#investigate" aria-label="EvidenceLineage home">
+        <span class="brand-mark">EL</span>
+        <span><strong>EvidenceLineage</strong><small>Trace claims. Verify evidence.</small></span>
+      </a>
+      <nav aria-label="Primary navigation">
+        <a class="active" href="#investigate">Investigate</a>
+        <a href="#results">Evidence record</a>
+        <a href="#agent-monitor">Agents</a>
+        <a href="#method">Method</a>
+      </nav>
+      <div id="system-pill" class="system-pill"><i></i> System ready</div>
     </header>
 
-    <form id="investigation-form" class="card input-card">
-      <label for="claim-text">Your claim or paragraph <span class="optional">optional</span></label>
-      <textarea id="claim-text" placeholder="Paste the claim from your paper that you want to audit, including its citation marker if available."></textarea>
-      <label for="identifier">Cited paper link, DOI, OpenAlex ID, or title</label>
-      <div class="input-row">
-        <input id="identifier" required placeholder="https://doi.org/10.1038/nature12373" autocomplete="off">
-        <button type="submit">Investigate</button>
-      </div>
-      <p class="hint">If the claim box is empty, EvidenceLineage automatically mines a claim from the supplied paper instead.</p>
-    </form>
+    <div class="app-layout">
+      <aside class="sidebar">
+        <section>
+          <p class="nav-label">Workspace</p>
+          <a class="side-link active" href="#investigate"><span>＋</span> New investigation</a>
+          <a class="side-link" href="#results"><span>⌕</span> Current evidence</a>
+          <a class="side-link" href="#agent-monitor"><span>◉</span> Agent monitor</a>
+        </section>
+        <section>
+          <p class="nav-label">Research tools</p>
+          <span class="side-link muted-link"><span>◇</span> Claim auditor</span>
+          <span class="side-link muted-link"><span>⌁</span> Source tracer</span>
+          <span class="side-link muted-link"><span>⚖</span> Evidence judge</span>
+        </section>
+        <blockquote>“Extraordinary claims require extraordinary evidence.”<cite>— Carl Sagan</cite></blockquote>
+        <div class="sidebar-status"><p class="nav-label">Research standard</p><strong><i></i> Provenance first</strong><small>No invented papers, passages, or citation links.</small></div>
+      </aside>
 
-    <section id="running" class="card hidden">
-      <div class="spinner"></div>
-      <div class="activity-wrap"><strong>Live agent activity</strong><div id="live-activity"></div></div>
-    </section>
-    <section id="error" class="error hidden"></section>
-    <section id="results" class="hidden"></section>
-  </main>
+      <main>
+        <section id="investigate" class="intro">
+          <p class="kicker">Scientific evidence audit · New inquiry</p>
+          <h1>Follow a claim back to its <em>evidence.</em></h1>
+          <p>Compare the statement in your writing with the cited paper, then inspect whether that paper’s own references support the scientific lineage.</p>
+        </section>
+
+        <section class="investigation-grid">
+          <form id="investigation-form" class="scholar-panel">
+            <div class="panel-heading"><span>Investigation brief</span><small>Two inputs · one auditable record</small></div>
+            <div class="form-grid">
+              <div class="field-block">
+                <div class="field-title"><b>01</b><span><label for="claim-text">Claim or paragraph</label><small>The statement you intend to support</small></span></div>
+                <textarea id="claim-text" maxlength="3000" placeholder="Paste the scientific claim or paragraph from your work, including its citation marker if available."></textarea>
+                <div class="field-foot"><span>Optional — leave blank to mine the paper</span><span id="claim-count">0 / 3000</span></div>
+              </div>
+              <div class="field-block">
+                <div class="field-title"><b>02</b><span><label for="identifier">Cited source</label><small>DOI, paper link, OpenAlex ID, or title</small></span></div>
+                <input id="identifier" required maxlength="500" placeholder="10.1038/s41586-024-00000-0" autocomplete="off">
+                <div class="field-foot"><span>Scholarly identifiers are resolved automatically</span><span id="citation-count">0 / 500</span></div>
+              </div>
+            </div>
+            <div class="submit-row"><p><strong>Five independent roles</strong><br>Claim Miner · Source Tracer · Evidence · Skeptic · Judge</p><button type="submit"><span>Begin investigation</span><b>→</b></button></div>
+          </form>
+
+          <aside class="principle-card" id="method">
+            <div class="orbital-mark"><span>EL</span></div>
+            <p class="kicker">The lineage principle</p>
+            <h2>A citation is a trail, not proof.</h2>
+            <p>EvidenceLineage separates direct claim support from upstream reference support and preserves uncertainty at every step.</p>
+            <div class="mini-lineage"><span>Claim</span><i></i><span>Cited paper</span><i></i><span>Origin</span></div>
+          </aside>
+        </section>
+
+        <section id="running" class="agent-console hidden" aria-live="polite">
+          <div class="console-head"><div><p class="kicker">Live inquiry</p><h2>Agents examining the record</h2></div><div class="researching"><span class="spinner"></span> Researching</div></div>
+          <div id="live-activity"></div>
+        </section>
+        <section id="error" class="error hidden" role="alert"></section>
+        <section id="results" class="hidden" aria-live="polite"></section>
+      </main>
+    </div>
+  </div>
   <script src="/static/app.js"></script>
 </body>
 </html>

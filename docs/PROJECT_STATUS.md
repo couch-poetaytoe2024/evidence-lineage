@@ -44,6 +44,7 @@ Evidence retrieval and Evidence Agent MVP
 - Workflow errors remain in agent cards/execution trace instead of being mixed with scientific evidence limitations.
 - NDJSON streaming endpoint emits real agent phase transitions and the final research case.
 - Web UI displays live Source Tracer, Claim Miner, Evidence, Skeptic, and Judge activity while an investigation runs.
+- Web UI now uses a responsive academic research-console design with a structured investigation brief, live agent monitor, citation-lineage timeline, source evidence library, independent review, verdict scorecards, and clearly separated verification boundaries.
 - OpenAlex integration resolves papers, reconstructs indexed abstracts, and discovers referenced works.
 - Typed `ResearchCase`, `CitationEdge`, `EvidenceItem`, and `ExecutionEvent` shared state added.
 - Reference abstracts become provenance-linked evidence leads without claiming they are full-text proof.
@@ -92,4 +93,4 @@ Validate the complete UI workflow on the selected real demo case, then add open-
 
 ## Last updated
 
-2026-08-15
+2026-08-17
