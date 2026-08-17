@@ -10,8 +10,6 @@ const diagnosticAgents = document.querySelector('#diagnostic-agents');
 const diagnosticNotes = document.querySelector('#diagnostic-notes');
 const diagnosticSummary = document.querySelector('#diagnostic-summary');
 const agentOrder = ['source_tracer','claim_miner','evidence_agent','skeptic_agent','judge_agent'];
-const progressStates = new Map();
-let currentProgress = 0;
 const esc = value => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 
 claimInput.addEventListener('input', () => document.querySelector('#claim-count').textContent = `${claimInput.value.length} / 3000`);
@@ -23,8 +21,6 @@ function setSystem(state, text) {
 }
 
 function resetDiagnostics() {
-  progressStates.clear();
-  updateProgress(0);
   diagnosticSummary.textContent = 'Investigation in progress';
   document.querySelector('#stat-agents').textContent = '0 / 5';
   document.querySelector('#stat-sources').textContent = '0';
@@ -32,17 +28,6 @@ function resetDiagnostics() {
   document.querySelector('#stat-failures').textContent = '0';
   diagnosticAgents.innerHTML = agentOrder.map((agent, index) => `<article id="diagnostic-${agent}" class="diagnostic-agent"><b>${String(index + 1).padStart(2,'0')}</b><div><strong>${esc(agent.replaceAll('_',' '))}</strong><small>Waiting to begin</small></div><span class="diagnostic-state">PENDING</span></article>`).join('');
   diagnosticNotes.innerHTML = '<p>The workflow has started. Each completed, failed, or fallback step will be recorded here.</p>';
-}
-
-function updateProgress(explicitValue = null) {
-  const completed = [...progressStates.values()].filter(status => ['DONE','FAILED','FALLBACK'].includes(status)).length;
-  const runningNow = [...progressStates.values()].some(status => status === 'RUNNING');
-  const calculated = explicitValue ?? Math.min(95, completed * 20 + (runningNow ? 8 : 0));
-  currentProgress = explicitValue === 0 ? 0 : Math.max(currentProgress, calculated);
-  const value = currentProgress;
-  document.querySelector('#progress-percent').textContent = `${value}%`;
-  document.querySelector('#workflow-progress-fill').style.width = `${value}%`;
-  document.querySelector('.workflow-progress').setAttribute('aria-valuenow', String(value));
 }
 
 async function runNonStreaming(payload) {
@@ -69,7 +54,7 @@ form.addEventListener('submit', async event => {
       body:JSON.stringify(payload)
     });
     if (response.status === 404) {
-      diagnosticNotes.innerHTML = '<p><strong>Live stream route unavailable.</strong> Retrying through the standard investigation endpoint. Restart the backend to restore live progress updates.</p>';
+      diagnosticSummary.textContent = 'Investigation in progress';
       await runNonStreaming(payload);
       setSystem('', 'Investigation complete');
       return;
@@ -108,8 +93,6 @@ function handleStreamMessage(message) {
 }
 
 function appendLiveEvent(event) {
-  progressStates.set(event.agent, event.status);
-  updateProgress();
   const key = `agent-${event.agent}`;
   let row = document.getElementById(key);
   if (!row) {
@@ -128,7 +111,6 @@ function appendLiveEvent(event) {
 }
 
 function render(data) {
-  updateProgress(100);
   const verdict = data.verdicts?.[0];
   const support = data.support_arguments?.[0];
   const skeptic = data.skeptic_arguments?.[0];
@@ -141,7 +123,6 @@ function render(data) {
   const supportText = support?.conclusion || eventFor('evidence_agent')?.detail || 'No evidence argument was available.';
   const skepticText = skeptic?.conclusion || eventFor('skeptic_agent')?.detail || 'No skeptical challenge was available.';
   const badge = text => `<span class="status">${esc(text)}</span>`;
-  const scoreBlock = (label, value) => value == null ? '' : `<div class="score-block"><div class="score-label"><span>${esc(label)}</span><strong>${value}/100</strong></div><div class="meter" role="meter" aria-valuenow="${value}" aria-valuemin="0" aria-valuemax="100"><div style="width:${Math.max(0,Math.min(100,value))}%"></div></div></div>`;
   const evidence = data.evidence || [];
   const edges = data.citation_chain || [];
   updateDiagnostics(data, trace, evidence);
@@ -166,7 +147,7 @@ function render(data) {
     <aside class="results-side">
       <section class="result-panel">
         <div class="section-head"><h2>Judge verdict</h2><small>Auditable synthesis</small></div>
-        ${verdict ? `<div class="verdict-word"><span>${esc(verdict.verdict.replaceAll('_',' '))}</span>${verdict.support_score == null ? '' : `<strong class="verdict-score">${verdict.support_score}% <small>claim support</small></strong>`}</div><p class="verdict-reason">${esc(verdict.reason)}</p>${scoreBlock('Claim supported by cited paper', verdict.support_score)}${scoreBlock('Cited paper supported upstream', verdict.lineage_score)}<p class="muted">Judge confidence ${Math.round(verdict.confidence * 100)}% · uncalibrated model estimate</p>` : '<p class="empty">No adjudicated verdict was available.</p>'}
+        ${verdict ? `<div class="verdict-word"><span>${esc(verdict.verdict.replaceAll('_',' '))}</span></div><p class="verdict-reason">${esc(verdict.reason)}</p><p class="muted">Categorical agent assessment based on the retrieved evidence and citation record.</p>` : '<p class="empty">No adjudicated verdict was available.</p>'}
       </section>
       <section class="result-panel">
         <div class="section-head"><h2>Independent review</h2><small>Evidence and challenge</small></div>
