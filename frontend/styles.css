@@ -31,3 +31,6 @@ body{background-color:#020706;background-image:radial-gradient(circle at 78% 5%,
 
 /* Investigation state and categorical verdict */
 .console-head h2{display:flex;align-items:center;gap:9px}.console-head .spinner{width:17px;height:17px;margin:0}.verdict-word{border-bottom:1px solid #594319;padding-bottom:12px}.verdict-word>span{overflow-wrap:anywhere}
+
+/* Qualitative evidence assessment bars */
+.assessment-bars{display:grid;gap:13px;margin:18px 0}.assessment-bar{padding:11px 12px;border:1px solid #60491f;background:#060604}.assessment-label{display:flex;justify-content:space-between;gap:14px;color:#cfc2a5;font-size:11px}.assessment-label strong{color:#e3b75b;text-transform:uppercase;letter-spacing:.08em;font-size:9px}.assessment-bar .meter{height:9px;margin:8px 0 0;border:3px double #6f511c;background:#010201}.assessment-bar .meter>div{height:100%;background:linear-gradient(90deg,#75501a,#d7a945,#edcb79)}

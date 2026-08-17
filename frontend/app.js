@@ -10,6 +10,8 @@ const diagnosticAgents = document.querySelector('#diagnostic-agents');
 const diagnosticNotes = document.querySelector('#diagnostic-notes');
 const diagnosticSummary = document.querySelector('#diagnostic-summary');
 const agentOrder = ['source_tracer','claim_miner','evidence_agent','skeptic_agent','judge_agent'];
+const completedAgents = new Set();
+const failedAgents = new Set();
 const esc = value => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 
 claimInput.addEventListener('input', () => document.querySelector('#claim-count').textContent = `${claimInput.value.length} / 3000`);
@@ -21,6 +23,8 @@ function setSystem(state, text) {
 }
 
 function resetDiagnostics() {
+  completedAgents.clear();
+  failedAgents.clear();
   diagnosticSummary.textContent = 'Investigation in progress';
   document.querySelector('#stat-agents').textContent = '0 / 5';
   document.querySelector('#stat-sources').textContent = '0';
@@ -93,6 +97,10 @@ function handleStreamMessage(message) {
 }
 
 function appendLiveEvent(event) {
+  if (['DONE','FAILED','FALLBACK'].includes(event.status)) completedAgents.add(event.agent);
+  if (['FAILED','FALLBACK'].includes(event.status)) failedAgents.add(event.agent);
+  document.querySelector('#stat-agents').textContent = `${completedAgents.size} / 5`;
+  document.querySelector('#stat-failures').textContent = String(failedAgents.size);
   const key = `agent-${event.agent}`;
   let row = document.getElementById(key);
   if (!row) {
@@ -123,6 +131,12 @@ function render(data) {
   const supportText = support?.conclusion || eventFor('evidence_agent')?.detail || 'No evidence argument was available.';
   const skepticText = skeptic?.conclusion || eventFor('skeptic_agent')?.detail || 'No skeptical challenge was available.';
   const badge = text => `<span class="status">${esc(text)}</span>`;
+  const assessmentBar = (label, value) => {
+    if (value == null) return '';
+    const bounded = Math.max(0, Math.min(100, value));
+    const level = bounded >= 75 ? 'Strong' : bounded >= 45 ? 'Moderate' : 'Low';
+    return `<div class="assessment-bar"><div class="assessment-label"><span>${esc(label)}</span><strong>${level}</strong></div><div class="meter" aria-label="${esc(label)}: ${level}"><div style="width:${bounded}%"></div></div></div>`;
+  };
   const evidence = data.evidence || [];
   const edges = data.citation_chain || [];
   updateDiagnostics(data, trace, evidence);
@@ -147,7 +161,7 @@ function render(data) {
     <aside class="results-side">
       <section class="result-panel">
         <div class="section-head"><h2>Judge verdict</h2><small>Auditable synthesis</small></div>
-        ${verdict ? `<div class="verdict-word"><span>${esc(verdict.verdict.replaceAll('_',' '))}</span></div><p class="verdict-reason">${esc(verdict.reason)}</p><p class="muted">Categorical agent assessment based on the retrieved evidence and citation record.</p>` : '<p class="empty">No adjudicated verdict was available.</p>'}
+        ${verdict ? `<div class="verdict-word"><span>${esc(verdict.verdict.replaceAll('_',' '))}</span></div><p class="verdict-reason">${esc(verdict.reason)}</p><div class="assessment-bars">${assessmentBar('Direct claim support', verdict.support_score)}${assessmentBar('Upstream lineage support', verdict.lineage_score)}</div><p class="muted">Qualitative agent assessment based on the retrieved evidence and citation record.</p>` : '<p class="empty">No adjudicated verdict was available.</p>'}
       </section>
       <section class="result-panel">
         <div class="section-head"><h2>Independent review</h2><small>Evidence and challenge</small></div>
@@ -171,7 +185,7 @@ function render(data) {
 function updateDiagnostics(data, trace, evidence) {
   const latest = new Map();
   for (const event of trace) latest.set(event.agent, event);
-  const completed = [...latest.values()].filter(item => item.status === 'DONE').length;
+  const completed = [...latest.values()].filter(item => ['DONE','FAILED','FALLBACK'].includes(item.status)).length;
   const failures = [...latest.values()].filter(item => ['FAILED','FALLBACK'].includes(item.status));
   document.querySelector('#stat-agents').textContent = `${completed} / 5`;
   document.querySelector('#stat-sources').textContent = String((data.papers || []).length);
