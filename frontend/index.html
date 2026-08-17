@@ -12,7 +12,7 @@
     <header class="topbar">
       <a class="brand" href="#investigate" aria-label="EvidenceLineage home">
         <span class="brand-crest" aria-hidden="true">
-          <svg viewBox="0 0 64 72"><path d="M32 3 56 12v22c0 16-10 27-24 34C18 61 8 50 8 34V12Z"/><path d="M32 8v53M13 18h38M14 39h36"/><path d="m20 27 5 4-2 6h-6l-2-6Zm24 0 5 4-2 6h-6l-2-6ZM27 48h10v8H27z"/></svg>
+          <svg viewBox="0 0 100 82"><g class="laurel"><path d="M30 73C9 59 5 37 15 16M70 73c21-14 25-36 15-57"/><path d="m22 60-11-4m8-5-11-7m9-2-9-9m11 1-6-11m9 4-2-12m58 45 11-4m-8-5 11-7m-9-2 9-9m-11 1 6-11m-9 4 2-12"/></g><path d="M50 5 72 13v21c0 15-9 26-22 34-13-8-22-19-22-34V13Z"/><path d="M50 10v51M33 19h34M34 39h32"/><path d="m40 27 4 4-2 5h-5l-2-5Zm20 0 5 4-2 5h-5l-2-5ZM45 47h10v8H45z"/><path class="crown" d="m38 8 4-7 8 6 8-6 4 7"/></svg>
         </span>
         <span><strong>EvidenceLineage</strong><small>Trace claims. Verify evidence.</small></span>
       </a>
@@ -22,7 +22,7 @@
         <a href="#agent-monitor">Agents</a>
         <a href="#method">Method</a>
       </nav>
-      <div id="system-pill" class="system-pill"><i></i> System ready</div>
+      <div class="header-actions"><a class="new-inquiry" href="#investigate">⊕ <span>New investigation</span></a><div id="system-pill" class="system-pill"><i></i> System ready</div><span class="monogram">EL</span></div>
     </header>
 
     <div class="app-layout">
@@ -32,23 +32,27 @@
           <a class="side-link active" href="#investigate"><span>＋</span> New investigation</a>
           <a class="side-link" href="#results"><span>⌕</span> Current evidence</a>
           <a class="side-link" href="#agent-monitor"><span>◉</span> Agent monitor</a>
+          <span class="side-link muted-link"><span>◷</span> Recent investigations</span>
+          <span class="side-link muted-link"><span>♧</span> Saved searches</span>
         </section>
         <section>
           <p class="nav-label">Research tools</p>
           <span class="side-link muted-link"><span>◇</span> Claim auditor</span>
           <span class="side-link muted-link"><span>⌁</span> Source tracer</span>
           <span class="side-link muted-link"><span>⚖</span> Evidence judge</span>
+          <span class="side-link muted-link"><span>✓</span> Methodology checker</span>
+        </section>
+        <section>
+          <p class="nav-label">Library</p>
+          <span class="side-link muted-link"><span>▣</span> Collections</span>
+          <span class="side-link muted-link"><span>⇧</span> Upload sources</span>
         </section>
         <blockquote>“Extraordinary claims require extraordinary evidence.”<cite>— Carl Sagan</cite></blockquote>
         <div class="sidebar-status"><p class="nav-label">Research standard</p><strong><i></i> Provenance first</strong><small>No invented papers, passages, or citation links.</small></div>
       </aside>
 
       <main>
-        <section id="investigate" class="intro">
-          <p class="kicker">Scientific evidence audit · New inquiry</p>
-          <h1>Follow a claim back to its <em>evidence.</em></h1>
-          <p>Compare the statement in your writing with the cited paper, then inspect whether that paper’s own references support the scientific lineage.</p>
-        </section>
+        <section id="investigate" class="intro"><div><p class="kicker">Investigation workspace · Evidence audit</p><h1>Trace the scientific record.</h1></div><p>Test whether a cited paper supports your claim—and whether its own evidence lineage holds.</p></section>
 
         <section class="investigation-grid">
           <form id="investigation-form" class="scholar-panel">
@@ -57,15 +61,17 @@
               <div class="field-block">
                 <div class="field-title"><b>01</b><span><label for="claim-text">Claim or paragraph</label><small>The statement you intend to support</small></span></div>
                 <textarea id="claim-text" maxlength="3000" placeholder="Paste the scientific claim or paragraph from your work, including its citation marker if available."></textarea>
+                <div class="field-tools"><span>✎ Writing claim</span><button type="button" class="utility" title="A strong claim should be specific and falsifiable">◇ Claim tips</button></div>
                 <div class="field-foot"><span>Optional — leave blank to mine the paper</span><span id="claim-count">0 / 3000</span></div>
               </div>
               <div class="field-block">
                 <div class="field-title"><b>02</b><span><label for="identifier">Cited source</label><small>DOI, paper link, OpenAlex ID, or title</small></span></div>
                 <input id="identifier" required maxlength="500" placeholder="10.1038/s41586-024-00000-0" autocomplete="off">
+                <div class="field-tools"><span>⌕ Source resolver</span><button type="button" class="utility" title="Accepts DOI, OpenAlex, PubMed, arXiv, URL, or title">▤ Accepted formats</button></div>
                 <div class="field-foot"><span>Scholarly identifiers are resolved automatically</span><span id="citation-count">0 / 500</span></div>
               </div>
             </div>
-            <div class="submit-row"><p><strong>Five independent roles</strong><br>Claim Miner · Source Tracer · Evidence · Skeptic · Judge</p><button type="submit"><span>Begin investigation</span><b>→</b></button></div>
+            <div class="submit-row"><p><strong>Five independent roles</strong><br>Claim Miner · Source Tracer · Evidence · Skeptic · Judge</p><div class="privacy-note">◈ Provenance preserved</div></div>
           </form>
 
           <aside class="principle-card" id="method">
@@ -81,6 +87,8 @@
             <h2>A citation is a trail, not proof.</h2>
             <p>EvidenceLineage separates direct claim support from upstream reference support and preserves uncertainty at every step.</p>
             <div class="mini-lineage"><span>Claim</span><i></i><span>Cited paper</span><i></i><span>Origin</span></div>
+            <button class="engraved-action" type="submit" form="investigation-form"><span>Investigate</span><b>→</b></button>
+            <small class="enter-note">Press Enter to begin the audit</small>
             <span class="corner corner-tl"></span><span class="corner corner-tr"></span><span class="corner corner-bl"></span><span class="corner corner-br"></span>
           </aside>
         </section>

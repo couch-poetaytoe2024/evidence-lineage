@@ -18,7 +18,7 @@ function setSystem(state, text) {
 
 form.addEventListener('submit', async event => {
   event.preventDefault();
-  const button = form.querySelector('button');
+  const button = document.querySelector('.engraved-action');
   running.classList.remove('hidden');
   results.classList.add('hidden');
   errorBox.classList.add('hidden');
