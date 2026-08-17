@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EvidenceLineage</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <main>
+    <header>
+      <p class="eyebrow">MULTI-AGENT SCIENTIFIC CLAIM AUDITOR</p>
+      <h1>Evidence<span>Lineage</span></h1>
+      <p class="lede">Trace a paper's claims backward through its references and inspect whether the retrieved evidence supports what was said.</p>
+    </header>
+
+    <form id="investigation-form" class="card input-card">
+      <label for="claim-text">Your claim or paragraph <span class="optional">optional</span></label>
+      <textarea id="claim-text" placeholder="Paste the claim from your paper that you want to audit, including its citation marker if available."></textarea>
+      <label for="identifier">Cited paper link, DOI, OpenAlex ID, or title</label>
+      <div class="input-row">
+        <input id="identifier" required placeholder="https://doi.org/10.1038/nature12373" autocomplete="off">
+        <button type="submit">Investigate</button>
+      </div>
+      <p class="hint">If the claim box is empty, EvidenceLineage automatically mines a claim from the supplied paper instead.</p>
+    </form>
+
+    <section id="running" class="card hidden">
+      <div class="spinner"></div>
+      <div><strong>Agents are investigating</strong><p>Resolving sources, retrieving evidence, debating, and judging.</p></div>
+    </section>
+    <section id="error" class="error hidden"></section>
+    <section id="results" class="hidden"></section>
+  </main>
+  <script src="/static/app.js"></script>
+</body>
+</html>
