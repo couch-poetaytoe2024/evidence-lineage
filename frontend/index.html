@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="EvidenceLineage traces scientific claims through their citation history.">
+  <title>EvidenceLineage · Scientific Claim Auditor</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <div class="page-frame">
+    <header class="topbar">
+      <a class="brand" href="#investigate" aria-label="EvidenceLineage home">
+        <span class="brand-crest" aria-hidden="true">
+          <svg viewBox="0 0 110 88"><g class="laurel"><path d="M34 79C10 64 5 39 17 13M76 79c24-15 29-40 17-66"/><path d="m26 68-13-3m10-7-13-6m11-3-11-9m13 0-8-11m12 4-4-13m61 48 13-3m-10-7 13-6m-11-3 11-9m-13 0 8-11m-12 4 4-13"/><ellipse cx="18" cy="57" rx="3" ry="7" transform="rotate(-52 18 57)"/><ellipse cx="14" cy="43" rx="3" ry="7" transform="rotate(-35 14 43)"/><ellipse cx="92" cy="57" rx="3" ry="7" transform="rotate(52 92 57)"/><ellipse cx="96" cy="43" rx="3" ry="7" transform="rotate(35 96 43)"/></g><path class="shield" d="M55 8 79 16v23c0 17-10 29-24 38-14-9-24-21-24-38V16Z"/><path d="M55 12v58M36 23h38M37 44h36"/><path class="emblem-fill" d="m43 31 5 4-2 6h-6l-2-6Zm24 0 5 4-2 6h-6l-2-6ZM49 53h12v9H49z"/><path class="crown" d="m41 10 4-8 10 7 10-7 4 8-5 4H46Z"/><circle cx="45" cy="5" r="1.6"/><circle cx="55" cy="5" r="1.6"/><circle cx="65" cy="5" r="1.6"/><path class="ribbon" d="M29 71c8 6 17 10 26 12 9-2 18-6 26-12M34 76l-9 7 12 1m39-8 9 7-12 1"/></svg>
+        </span>
+        <span><strong>EvidenceLineage</strong><small>Trace claims. Verify evidence.</small></span>
+      </a>
+      <div class="header-actions"><a class="new-inquiry" href="#investigate">⊕ <span>New investigation</span></a><div id="system-pill" class="system-pill"><i></i> System ready</div><span class="monogram">EL</span></div>
+    </header>
+
+    <div class="app-layout">
+      <main>
+        <section id="investigate" class="intro"><div><p class="kicker">Investigation workspace · Evidence audit</p><h1>Trace the scientific record.</h1></div><p>Test whether a cited paper supports your claim—and whether its own evidence lineage holds.</p></section>
+
+        <section class="investigation-grid">
+          <form id="investigation-form" class="scholar-panel">
+            <div class="panel-heading"><span>Investigation brief</span><small>Two inputs · one auditable record</small></div>
+            <div class="form-grid">
+              <div class="field-block">
+                <div class="field-title"><b>01</b><span><label for="claim-text">Claim or paragraph</label><small>The statement you intend to support</small></span></div>
+                <textarea id="claim-text" maxlength="3000" placeholder="Paste the scientific claim or paragraph from your work, including its citation marker if available."></textarea>
+                <div class="field-tools"><span>✎ Writing claim</span><button type="button" class="utility" title="A strong claim should be specific and falsifiable">◇ Claim tips</button></div>
+                <div class="field-foot"><span>Optional — leave blank to mine the paper</span><span id="claim-count">0 / 3000</span></div>
+              </div>
+              <div class="field-block">
+                <div class="field-title"><b>02</b><span><label for="identifier">Cited source</label><small>DOI, paper link, OpenAlex ID, or title</small></span></div>
+                <input id="identifier" required maxlength="500" placeholder="10.1038/s41586-024-00000-0" autocomplete="off">
+                <div class="field-tools"><span>⌕ Source resolver</span><button type="button" class="utility" title="Accepts DOI, OpenAlex, PubMed, arXiv, URL, or title">▤ Accepted formats</button></div>
+                <div class="field-foot"><span>Scholarly identifiers are resolved automatically</span><span id="citation-count">0 / 500</span></div>
+              </div>
+            </div>
+            <div class="submit-row"><p><strong>Five independent roles</strong><br>Claim Miner · Source Tracer · Evidence · Skeptic · Judge</p><div class="privacy-note">◈ Provenance preserved</div></div>
+          </form>
+
+          <aside class="principle-card" id="method">
+            <div class="engraving" aria-hidden="true">
+              <svg viewBox="0 0 260 155">
+                <g class="rays"><path d="M135 5v20M95 13l8 18M174 13l-8 18M64 34l16 13M204 34l-16 13M48 68h24M220 68h-24"/></g>
+                <path class="book" d="M28 54c37-16 69-8 102 17v66c-31-22-65-30-102-13Zm204 0c-37-16-69-8-102 17v66c31-22 65-30 102-13ZM130 71v66"/>
+                <path class="pages" d="M38 65c30-10 56-3 83 15M38 78c30-10 56-3 83 15M38 91c30-10 56-3 83 15M222 65c-25-8-48-5-70 7M216 105c-21-3-39 1-59 12"/>
+                <path class="fine-lines" d="M42 69c24-7 48-1 72 12M42 74c24-7 48-1 72 12M42 84c24-7 48-1 72 12M42 89c24-7 48-1 72 12M42 99c24-7 48-1 72 12M42 104c24-7 48-1 72 12M218 69c-18-5-37-3-57 4M216 76c-18-4-37-1-56 6M214 111c-17-1-33 3-48 10"/>
+                <path class="page-edges" d="M28 124c39-8 73 2 102 13 29-11 63-21 102-13M33 130c35-5 67 3 97 12 30-9 62-17 97-12M126 74l4-7 4 7M77 48l5-13 5 13M113 45l3-15 4 16"/>
+                <path class="bookmark" d="M140 73v53l7-8 7 6V70"/>
+                <path class="hatch" d="m169 52 32 40m-37-34 31 40m-37-31 28 37m9-59 19 26m-15-22 17 23"/>
+                <circle class="glass" cx="185" cy="75" r="31"/><circle class="glass-inner" cx="185" cy="75" r="23"/><path class="handle" d="m207 98 33 34-11 11-33-35"/>
+                <path class="reflection" d="M169 65c4-8 11-12 20-12M226 121l8 8"/>
+                <g class="stars"><path d="m61 27 2 5 5 2-5 2-2 5-2-5-5-2 5-2Zm132-17 2 4 4 2-4 2-2 4-2-4-4-2 4-2Zm35 31 1 3 3 1-3 1-1 3-1-3-3-1 3-1Z"/></g>
+              </svg>
+            </div>
+            <p class="kicker">The lineage principle</p>
+            <h2>A citation is a trail, not proof.</h2>
+            <p>EvidenceLineage separates direct claim support from upstream reference support and preserves uncertainty at every step.</p>
+            <div class="mini-lineage"><span>Claim</span><i></i><span>Cited paper</span><i></i><span>Origin</span></div>
+            <button class="engraved-action" type="submit" form="investigation-form"><span>Investigate</span><b>→</b></button>
+            <small class="enter-note">Press Enter to begin the audit</small>
+            <span class="corner corner-tl"></span><span class="corner corner-tr"></span><span class="corner corner-bl"></span><span class="corner corner-br"></span>
+          </aside>
+        </section>
+
+        <section id="running" class="agent-console hidden" aria-live="polite">
+          <div class="console-head"><div><p class="kicker">Live inquiry</p><h2><span class="spinner"></span> Investigation in progress</h2></div><div class="researching">Agents examining the record</div></div>
+          <div id="live-activity"></div>
+        </section>
+        <section id="error" class="error hidden" role="alert"></section>
+        <section id="diagnostics" class="diagnostic-panel" aria-live="polite">
+          <div class="diagnostic-head"><div><p class="kicker">Investigation diagnostics</p><h2>Audit status and execution record</h2></div><span id="diagnostic-summary" class="diagnostic-summary">Awaiting investigation</span></div>
+          <div class="stat-strip">
+            <div><strong id="stat-agents">0 / 5</strong><span>Agents completed</span></div>
+            <div><strong id="stat-sources">0</strong><span>Sources resolved</span></div>
+            <div><strong id="stat-evidence">0</strong><span>Evidence passages</span></div>
+            <div><strong id="stat-failures">0</strong><span>Failures or fallbacks</span></div>
+          </div>
+          <div id="diagnostic-agents" class="diagnostic-agents"></div>
+          <div id="diagnostic-notes" class="diagnostic-notes"><p>No investigation has run yet. Agent successes, failures, fallbacks, and verification limits will appear here.</p></div>
+        </section>
+        <section id="results" class="hidden" aria-live="polite"></section>
+      </main>
+    </div>
+  </div>
+  <script src="/static/app.js"></script>
+</body>
+</html>

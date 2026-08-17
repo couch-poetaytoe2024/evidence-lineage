@@ -8,8 +8,12 @@ claims, detects simple citation markers, and assigns a coarse claim type.
 from __future__ import annotations
 
 import re
+import json
 
-from backend.models.schemas import Claim, ClaimType
+from pydantic import BaseModel, Field, ValidationError
+
+from backend.models.schemas import Claim, ClaimExtractionResponse, ClaimType, ModelUsage
+from backend.services.llm import LLMClient, LLMError
 
 _CITATION_RE = re.compile(r"(?:\[(?P<bracket>\d+(?:\s*,\s*\d+)*)\]|\((?P<author>[A-Z][A-Za-z-]+(?:\s+et\s+al\.)?,?\s+\d{4})\))")
 _PERCENT_RE = re.compile(r"\b\d+(?:\.\d+)?\s*%")
@@ -63,3 +67,88 @@ def extract_claims(text: str) -> list[Claim]:
             )
         )
     return claims
+
+
+class _ExtractedClaim(BaseModel):
+    claim: str = Field(min_length=1)
+    citation: str | None = None
+    claim_type: ClaimType = ClaimType.GENERAL
+    importance: str = "medium"
+
+
+class _ModelOutput(BaseModel):
+    claims: list[_ExtractedClaim]
+
+
+_SYSTEM_PROMPT = """You are the Claim Miner in EvidenceLineage.
+Extract only specific, scientifically verifiable claims stated in the supplied text.
+Never add facts or citations. Preserve each citation marker's content without brackets.
+Prioritize the paper's central contribution, experimental result, quantitative finding, or
+demonstrated capability. Do not select generic background or motivation sentences when the
+text contains a claim about what the authors proposed, measured, found, or demonstrated.
+Make each claim self-contained while preserving its conditions and scope.
+Return at most the three most important claims, ordered from most to least important.
+Return only JSON with this shape:
+{"claims":[{"claim":"...","citation":"12 or Smith et al., 2020 or null","claim_type":"quantitative|causal|comparative|methodological|general|other","importance":"high|medium|low"}]}
+If no verifiable claims exist, return {"claims":[]}."""
+
+
+def _json_object(raw: str) -> dict[str, object]:
+    """Decode a JSON object, accepting a common fenced-JSON wrapper."""
+    cleaned = raw.strip()
+    if cleaned.startswith("```"):
+        lines = cleaned.splitlines()
+        if len(lines) >= 3 and lines[-1].strip() == "```":
+            cleaned = "\n".join(lines[1:-1])
+            if cleaned.lstrip().lower().startswith("json\n"):
+                cleaned = cleaned.lstrip()[5:]
+    value = json.loads(cleaned)
+    if not isinstance(value, dict):
+        raise ValueError("Claim Miner output must be a JSON object")
+    return value
+
+
+async def mine_claims(
+    text: str,
+    client: LLMClient | None = None,
+    *,
+    allow_fallback: bool = True,
+) -> ClaimExtractionResponse:
+    """Mine structured claims with an LLM or a deterministic safety fallback."""
+    if client is None:
+        return ClaimExtractionResponse(claims=extract_claims(text))
+
+    try:
+        result = await client.generate(
+            system_prompt=_SYSTEM_PROMPT,
+            user_prompt=text,
+            json_schema=_ModelOutput.model_json_schema(),
+        )
+        parsed = _ModelOutput.model_validate(_json_object(result.text))
+        claims = [
+            Claim(
+                id=f"claim_{index:03d}",
+                text=item.claim,
+                citation=item.citation,
+                claim_type=item.claim_type,
+                importance=item.importance,
+            )
+            for index, item in enumerate(parsed.claims[:3], start=1)
+        ]
+        return ClaimExtractionResponse(
+            claims=claims,
+            method="llm",
+            usage=ModelUsage(
+                model=result.model,
+                input_tokens=result.input_tokens,
+                output_tokens=result.output_tokens,
+            ),
+        )
+    except (json.JSONDecodeError, ValidationError, ValueError, TypeError, LLMError) as exc:
+        if not allow_fallback:
+            raise
+        return ClaimExtractionResponse(
+            claims=extract_claims(text),
+            method="heuristic_fallback",
+            warning=f"Model output was invalid; deterministic fallback used ({type(exc).__name__}).",
+        )
