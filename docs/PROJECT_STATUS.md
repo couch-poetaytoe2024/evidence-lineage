@@ -7,7 +7,7 @@ Evidence retrieval and Evidence Agent MVP
 ## Working
 
 - Public GitHub repository exists on `main`.
-- Persistent AI/Codex instructions defined in `AGENTS.md`.
+- Persistent repository contributor guidance defined in `AGENTS.md`.
 - Core project specification and hackathon constraints documented.
 - FastAPI skeleton includes `/health` and `/claims` endpoints.
 - Shared Pydantic claim/evidence/verdict models started.

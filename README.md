@@ -22,7 +22,7 @@ Hackathon scaffold is in place. The first implementation target is the **Claim M
 
 See:
 
-- `AGENTS.md` for persistent Codex/AI instructions
+- `AGENTS.md` for repository contributor guidance
 - `docs/PROJECT_SPEC.md` for the product source of truth
 - `docs/PROJECT_STATUS.md` for current progress
 - `docs/HACKATHON_RULES.md` for the working competition rules
