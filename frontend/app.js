@@ -6,6 +6,10 @@ const liveActivity = document.querySelector('#live-activity');
 const systemPill = document.querySelector('#system-pill');
 const claimInput = document.querySelector('#claim-text');
 const identifierInput = document.querySelector('#identifier');
+const diagnosticAgents = document.querySelector('#diagnostic-agents');
+const diagnosticNotes = document.querySelector('#diagnostic-notes');
+const diagnosticSummary = document.querySelector('#diagnostic-summary');
+const agentOrder = ['source_tracer','claim_miner','evidence_agent','skeptic_agent','judge_agent'];
 const esc = value => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 
 claimInput.addEventListener('input', () => document.querySelector('#claim-count').textContent = `${claimInput.value.length} / 3000`);
@@ -14,6 +18,22 @@ identifierInput.addEventListener('input', () => document.querySelector('#citatio
 function setSystem(state, text) {
   systemPill.className = `system-pill ${state}`;
   systemPill.innerHTML = `<i></i> ${esc(text)}`;
+}
+
+function resetDiagnostics() {
+  diagnosticSummary.textContent = 'Investigation in progress';
+  document.querySelector('#stat-agents').textContent = '0 / 5';
+  document.querySelector('#stat-sources').textContent = '0';
+  document.querySelector('#stat-evidence').textContent = '0';
+  document.querySelector('#stat-failures').textContent = '0';
+  diagnosticAgents.innerHTML = agentOrder.map((agent, index) => `<article id="diagnostic-${agent}" class="diagnostic-agent"><b>${String(index + 1).padStart(2,'0')}</b><div><strong>${esc(agent.replaceAll('_',' '))}</strong><small>Waiting to begin</small></div><span class="diagnostic-state">PENDING</span></article>`).join('');
+  diagnosticNotes.innerHTML = '<p>The workflow has started. Each completed, failed, or fallback step will be recorded here.</p>';
+}
+
+async function runNonStreaming(payload) {
+  const response = await fetch('/investigations/paper', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+  if (!response.ok) throw new Error(`Both investigation endpoints were unavailable (${response.status}). Restart the backend with: uvicorn backend.main:app --reload`);
+  render(await response.json());
 }
 
 form.addEventListener('submit', async event => {
@@ -25,12 +45,20 @@ form.addEventListener('submit', async event => {
   liveActivity.innerHTML = '';
   button.disabled = true;
   setSystem('busy', 'Investigation active');
+  resetDiagnostics();
   running.scrollIntoView({behavior:'smooth', block:'start'});
   try {
+    const payload = {identifier:identifierInput.value.trim(), claim_text:claimInput.value.trim() || null, max_references:4, use_llm:true};
     const response = await fetch('/investigations/paper/stream', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({identifier:identifierInput.value.trim(), claim_text:claimInput.value.trim() || null, max_references:4, use_llm:true})
+      body:JSON.stringify(payload)
     });
+    if (response.status === 404) {
+      diagnosticNotes.innerHTML = '<p><strong>Live stream route unavailable.</strong> Retrying through the standard investigation endpoint. Restart the backend to restore live progress updates.</p>';
+      await runNonStreaming(payload);
+      setSystem('', 'Investigation complete');
+      return;
+    }
     if (!response.ok) throw new Error(`Investigation request failed (${response.status}).`);
     if (!response.body) throw new Error('Live investigation streaming is unavailable in this browser.');
     const reader = response.body.getReader();
@@ -49,6 +77,9 @@ form.addEventListener('submit', async event => {
     errorBox.textContent = error.message;
     errorBox.classList.remove('hidden');
     setSystem('failed', 'Investigation interrupted');
+    diagnosticSummary.textContent = 'Investigation interrupted';
+    diagnosticNotes.innerHTML = `<p><strong>Request failure:</strong> ${esc(error.message)}</p><p>Your entered claim and source were not judged. Confirm the backend was launched with <code>uvicorn backend.main:app --reload</code>, then try again.</p>`;
+    document.querySelector('#stat-failures').textContent = '1';
   } finally {
     running.classList.add('hidden');
     button.disabled = false;
@@ -71,6 +102,12 @@ function appendLiveEvent(event) {
     liveActivity.appendChild(row);
   }
   row.innerHTML = `<strong>${esc(event.agent.replaceAll('_',' '))}</strong><small>${esc(event.detail)}</small><b class="state-${esc(event.status)}">${esc(event.status)}</b>`;
+  const diagnostic = document.querySelector(`#diagnostic-${event.agent}`);
+  if (diagnostic) {
+    diagnostic.className = `diagnostic-agent diagnostic-${event.status}`;
+    diagnostic.querySelector('small').textContent = event.detail;
+    diagnostic.querySelector('.diagnostic-state').textContent = event.status;
+  }
 }
 
 function render(data) {
@@ -89,6 +126,7 @@ function render(data) {
   const scoreBlock = (label, value) => value == null ? '' : `<div class="score-block"><div class="score-label"><span>${esc(label)}</span><strong>${value}/100</strong></div><div class="meter" role="meter" aria-valuenow="${value}" aria-valuemin="0" aria-valuemax="100"><div style="width:${Math.max(0,Math.min(100,value))}%"></div></div></div>`;
   const evidence = data.evidence || [];
   const edges = data.citation_chain || [];
+  updateDiagnostics(data, trace, evidence);
 
   results.innerHTML = `<div class="results-shell">
     <div class="results-main">
@@ -129,4 +167,26 @@ function render(data) {
   </div>`;
   results.classList.remove('hidden');
   results.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function updateDiagnostics(data, trace, evidence) {
+  const latest = new Map();
+  for (const event of trace) latest.set(event.agent, event);
+  const completed = [...latest.values()].filter(item => item.status === 'DONE').length;
+  const failures = [...latest.values()].filter(item => ['FAILED','FALLBACK'].includes(item.status));
+  document.querySelector('#stat-agents').textContent = `${completed} / 5`;
+  document.querySelector('#stat-sources').textContent = String((data.papers || []).length);
+  document.querySelector('#stat-evidence').textContent = String(evidence.length);
+  document.querySelector('#stat-failures').textContent = String(failures.length);
+  diagnosticSummary.textContent = failures.length ? `Completed with ${failures.length} warning${failures.length === 1 ? '' : 's'}` : 'Workflow completed successfully';
+  for (const agent of agentOrder) {
+    const event = latest.get(agent);
+    const card = document.querySelector(`#diagnostic-${agent}`);
+    if (!card || !event) continue;
+    card.className = `diagnostic-agent diagnostic-${event.status}`;
+    card.querySelector('small').textContent = event.detail;
+    card.querySelector('.diagnostic-state').textContent = event.status;
+  }
+  const limitations = data.limitations || [];
+  diagnosticNotes.innerHTML = `<h3>What succeeded</h3><ul>${[...latest.values()].filter(item => item.status === 'DONE').map(item => `<li><strong>${esc(item.agent.replaceAll('_',' '))}:</strong> ${esc(item.detail)}</li>`).join('') || '<li>No successful agent step was recorded.</li>'}</ul><h3>What failed or fell back</h3><ul>${failures.map(item => `<li><strong>${esc(item.agent.replaceAll('_',' '))}:</strong> ${esc(item.detail)}</li>`).join('') || '<li>No agent failures or fallbacks were reported.</li>'}</ul><h3>Verification boundaries</h3><ul>${limitations.map(item => `<li>${esc(item)}</li>`).join('') || '<li>No additional limitations were reported.</li>'}</ul>`;
 }

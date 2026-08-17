@@ -73,6 +73,17 @@
           <div id="live-activity"></div>
         </section>
         <section id="error" class="error hidden" role="alert"></section>
+        <section id="diagnostics" class="diagnostic-panel" aria-live="polite">
+          <div class="diagnostic-head"><div><p class="kicker">Investigation diagnostics</p><h2>Audit status and execution record</h2></div><span id="diagnostic-summary" class="diagnostic-summary">Awaiting investigation</span></div>
+          <div class="stat-strip">
+            <div><strong id="stat-agents">0 / 5</strong><span>Agents completed</span></div>
+            <div><strong id="stat-sources">0</strong><span>Sources resolved</span></div>
+            <div><strong id="stat-evidence">0</strong><span>Evidence passages</span></div>
+            <div><strong id="stat-failures">0</strong><span>Failures or fallbacks</span></div>
+          </div>
+          <div id="diagnostic-agents" class="diagnostic-agents"></div>
+          <div id="diagnostic-notes" class="diagnostic-notes"><p>No investigation has run yet. Agent successes, failures, fallbacks, and verification limits will appear here.</p></div>
+        </section>
         <section id="results" class="hidden" aria-live="polite"></section>
       </main>
     </div>
