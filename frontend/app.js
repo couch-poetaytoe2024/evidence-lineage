@@ -188,5 +188,17 @@ function updateDiagnostics(data, trace, evidence) {
     card.querySelector('.diagnostic-state').textContent = event.status;
   }
   const limitations = data.limitations || [];
-  diagnosticNotes.innerHTML = `<h3>What succeeded</h3><ul>${[...latest.values()].filter(item => item.status === 'DONE').map(item => `<li><strong>${esc(item.agent.replaceAll('_',' '))}:</strong> ${esc(item.detail)}</li>`).join('') || '<li>No successful agent step was recorded.</li>'}</ul><h3>What failed or fell back</h3><ul>${failures.map(item => `<li><strong>${esc(item.agent.replaceAll('_',' '))}:</strong> ${esc(item.detail)}</li>`).join('') || '<li>No agent failures or fallbacks were reported.</li>'}</ul><h3>Verification boundaries</h3><ul>${limitations.map(item => `<li>${esc(item)}</li>`).join('') || '<li>No additional limitations were reported.</li>'}</ul>`;
+  diagnosticNotes.innerHTML = `
+    <section class="diagnostic-group">
+      <h3>What succeeded</h3>
+      <ul>${[...latest.values()].filter(item => item.status === 'DONE').map(item => `<li><strong>${esc(item.agent.replaceAll('_',' '))}:</strong> ${esc(item.detail)}</li>`).join('') || '<li>No successful agent step was recorded.</li>'}</ul>
+    </section>
+    <section class="diagnostic-group">
+      <h3>What failed or fell back</h3>
+      <ul>${failures.map(item => `<li><strong>${esc(item.agent.replaceAll('_',' '))}:</strong> ${esc(item.detail)}</li>`).join('') || '<li>No agent failures or fallbacks were reported.</li>'}</ul>
+    </section>
+    <section class="diagnostic-group">
+      <h3>Verification boundaries</h3>
+      <ul>${limitations.map(item => `<li>${esc(item)}</li>`).join('') || '<li>No additional limitations were reported.</li>'}</ul>
+    </section>`;
 }
