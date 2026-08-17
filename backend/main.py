@@ -1,5 +1,9 @@
+import asyncio
+import json
+
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
+from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from backend.agents.claim_miner import mine_claims
@@ -75,3 +79,44 @@ async def investigate_paper_endpoint(request: PaperInvestigationRequest) -> Rese
         max_references=request.max_references,
         claim_text=request.claim_text,
     )
+
+
+@app.post("/investigations/paper/stream")
+async def investigate_paper_stream(request: PaperInvestigationRequest) -> StreamingResponse:
+    """Stream actual agent transitions followed by the final case."""
+
+    async def messages():
+        queue: asyncio.Queue[dict[str, object]] = asyncio.Queue()
+
+        async def on_event(event) -> None:
+            await queue.put({"type": "event", "event": event.model_dump(mode="json")})
+
+        async def run() -> None:
+            try:
+                llm = getattr(app.state, "llm_client", None) if request.use_llm else None
+                result = await investigate_paper(
+                    request.identifier,
+                    openalex=OpenAlexClient(contact_email=settings.contact_email),
+                    llm=llm,
+                    max_references=request.max_references,
+                    claim_text=request.claim_text,
+                    on_event=on_event,
+                )
+                await queue.put({"type": "result", "result": result.model_dump(mode="json")})
+            except Exception as exc:
+                await queue.put({"type": "error", "message": f"Investigation failed: {type(exc).__name__}"})
+            finally:
+                await queue.put({"type": "complete"})
+
+        task = asyncio.create_task(run())
+        try:
+            while True:
+                message = await queue.get()
+                yield json.dumps(message, ensure_ascii=False) + "\n"
+                if message["type"] == "complete":
+                    break
+        finally:
+            if not task.done():
+                task.cancel()
+
+    return StreamingResponse(messages(), media_type="application/x-ndjson")

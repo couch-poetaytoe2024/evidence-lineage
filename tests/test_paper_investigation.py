@@ -93,6 +93,27 @@ def test_autonomous_paper_investigation_builds_chain_and_evidence() -> None:
     assert len(result.model_usage) == 4
 
 
+def test_investigation_emits_real_phase_transitions() -> None:
+    events = []
+
+    async def capture(event) -> None:
+        events.append((event.agent, event.status))
+
+    result = asyncio.run(investigate_paper(
+        "10.1000/later",
+        openalex=FakeOpenAlex(),
+        llm=SequentialLLM(),
+        on_event=capture,
+    ))
+    assert result.verdicts
+    assert ("source_tracer", "RUNNING") in events
+    assert ("claim_miner", "RUNNING") in events
+    assert ("evidence_agent", "RUNNING") in events
+    assert ("skeptic_agent", "RUNNING") in events
+    assert ("judge_agent", "RUNNING") in events
+    assert events[-1] == ("judge_agent", "DONE")
+
+
 def test_user_claim_is_audited_against_cited_paper() -> None:
     claim = "The intervention improves accuracy by 40% in all conditions [12]."
     result = asyncio.run(investigate_paper(

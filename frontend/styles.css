@@ -21,6 +21,13 @@ button:disabled { opacity:.55; cursor:wait; }
 .hidden { display:none!important; }
 #running { display:flex; gap:16px; align-items:center; margin-top:18px; }
 #running p { margin:3px 0 0; color:var(--muted); }
+.activity-wrap { flex:1; }
+#live-activity { display:grid; gap:8px; margin-top:12px; }
+.live-event { display:flex; justify-content:space-between; gap:16px; padding:8px 0; border-top:1px solid var(--line); }
+.live-event small { color:var(--muted); }
+.state-RUNNING { color:var(--amber); }
+.state-DONE { color:var(--mint); }
+.state-FAILED,.state-FALLBACK { color:var(--red); }
 .spinner { width:28px; height:28px; border:3px solid var(--line); border-top-color:var(--mint); border-radius:50%; animation:spin 1s linear infinite; }
 @keyframes spin { to { transform:rotate(360deg); } }
 .error { margin-top:18px; padding:16px; border:1px solid #7a3535; background:#2a1111; color:#ffc3c0; border-radius:12px; }

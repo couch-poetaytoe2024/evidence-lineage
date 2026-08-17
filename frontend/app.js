@@ -2,27 +2,72 @@ const form = document.querySelector('#investigation-form');
 const running = document.querySelector('#running');
 const results = document.querySelector('#results');
 const errorBox = document.querySelector('#error');
+const liveActivity = document.querySelector('#live-activity');
 const esc = value => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 
 form.addEventListener('submit', async event => {
   event.preventDefault();
   const button = form.querySelector('button');
-  running.classList.remove('hidden'); results.classList.add('hidden'); errorBox.classList.add('hidden'); button.disabled = true;
+  running.classList.remove('hidden');
+  results.classList.add('hidden');
+  errorBox.classList.add('hidden');
+  liveActivity.innerHTML = '';
+  button.disabled = true;
   try {
     const claimText = document.querySelector('#claim-text').value.trim();
-    const response = await fetch('/investigations/paper', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({identifier:document.querySelector('#identifier').value,claim_text:claimText||null,max_references:4,use_llm:true})});
+    const response = await fetch('/investigations/paper/stream', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        identifier:document.querySelector('#identifier').value,
+        claim_text:claimText || null,
+        max_references:4,
+        use_llm:true
+      })
+    });
     if (!response.ok) throw new Error(`Request failed (${response.status})`);
-    render(await response.json());
+    if (!response.body) throw new Error('Streaming is unavailable in this browser.');
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    while (true) {
+      const {value,done} = await reader.read();
+      buffer += decoder.decode(value || new Uint8Array(), {stream:!done});
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+      for (const line of lines) {
+        if (line.trim()) handleStreamMessage(JSON.parse(line));
+      }
+      if (done) break;
+    }
   } catch (error) {
-    errorBox.textContent = error.message; errorBox.classList.remove('hidden');
-  } finally { running.classList.add('hidden'); button.disabled = false; }
+    errorBox.textContent = error.message;
+    errorBox.classList.remove('hidden');
+  } finally {
+    running.classList.add('hidden');
+    button.disabled = false;
+  }
 });
+
+function handleStreamMessage(message) {
+  if (message.type === 'event') appendLiveEvent(message.event);
+  if (message.type === 'result') render(message.result);
+  if (message.type === 'error') throw new Error(message.message);
+}
+
+function appendLiveEvent(event) {
+  const row = document.createElement('div');
+  row.className = 'live-event';
+  row.innerHTML = `<div><strong>${esc(event.agent.replaceAll('_',' '))}</strong><br><small>${esc(event.detail)}</small></div><b class="state-${esc(event.status)}">${esc(event.status)}</b>`;
+  liveActivity.appendChild(row);
+  row.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
 
 function render(data) {
   const verdict = data.verdicts?.[0];
   const support = data.support_arguments?.[0];
   const skeptic = data.skeptic_arguments?.[0];
-  const eventFor = agent => (data.execution_trace||[]).find(e => e.agent === agent);
+  const eventFor = agent => [...(data.execution_trace||[])].reverse().find(e => e.agent === agent);
   const papers = new Map((data.papers||[]).map(p => [p.id,p]));
   const paperLabel = id => papers.get(id)?.title || id;
   const paperDoi = id => papers.get(id)?.doi || '';

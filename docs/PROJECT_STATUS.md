@@ -42,6 +42,8 @@ Evidence retrieval and Evidence Agent MVP
 - Ollama failures include their concrete exception type, and Judge workflow fallbacks are no longer labeled as successful adjudications.
 - Ollama now receives agent-specific JSON Schemas and bounded response fields to prevent truncated/invalid JSON.
 - Workflow errors remain in agent cards/execution trace instead of being mixed with scientific evidence limitations.
+- NDJSON streaming endpoint emits real agent phase transitions and the final research case.
+- Web UI displays live Source Tracer, Claim Miner, Evidence, Skeptic, and Judge activity while an investigation runs.
 - OpenAlex integration resolves papers, reconstructs indexed abstracts, and discovers referenced works.
 - Typed `ResearchCase`, `CitationEdge`, `EvidenceItem`, and `ExecutionEvent` shared state added.
 - Reference abstracts become provenance-linked evidence leads without claiming they are full-text proof.

@@ -79,6 +79,10 @@ as direct retrieved evidence, Evidence and Skeptic independently analyze it, and
 Judge returns a verdict plus a 0–100 claim-support score. If `claim_text` is omitted,
 the automatic paper-claim workflow remains available.
 
+The browser uses `POST /investigations/paper/stream`, an NDJSON endpoint that emits
+real agent state transitions as they occur and finishes with the complete structured
+case. `POST /investigations/paper` remains available for non-streaming API clients.
+
 Run tests:
 
 ```bash

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from collections.abc import Awaitable, Callable
 
 from backend.agents.claim_miner import mine_claims
 from backend.agents.evidence_agent import build_support_argument
@@ -20,6 +21,8 @@ from backend.models.schemas import (
 )
 from backend.services.llm import LLMClient
 from backend.services.openalex import OpenAlexClient, OpenAlexError, OpenAlexNotFoundError, reconstruct_abstract
+
+EventCallback = Callable[[ExecutionEvent], Awaitable[None]]
 
 
 def paper_from_openalex(work: dict[str, object]) -> Paper | None:
@@ -60,34 +63,41 @@ async def investigate_paper(
     llm: LLMClient | None,
     max_references: int = 8,
     claim_text: str | None = None,
+    on_event: EventCallback | None = None,
 ) -> ResearchCase:
     events: list[ExecutionEvent] = []
     started = time.perf_counter()
+    await _record(events, ExecutionEvent(agent="source_tracer", status="RUNNING", detail="Resolving the cited paper."), on_event)
     try:
         root_work = await openalex.resolve_work(identifier)
     except OpenAlexNotFoundError:
+        await _record(events, ExecutionEvent(agent="source_tracer", status="FAILED", detail="Paper not found."), on_event)
         return ResearchCase(
             status=RetrievalStatus.SOURCE_UNAVAILABLE,
-            execution_trace=[ExecutionEvent(agent="source_tracer", status="FAILED", detail="Paper not found.")],
+            execution_trace=events,
             limitations=["No paper matched the supplied DOI, OpenAlex ID, or title."],
         )
     except OpenAlexError:
+        await _record(events, ExecutionEvent(agent="source_tracer", status="FAILED", detail="OpenAlex unavailable."), on_event)
         return ResearchCase(
             status=RetrievalStatus.SOURCE_UNAVAILABLE,
-            execution_trace=[ExecutionEvent(agent="source_tracer", status="FAILED", detail="OpenAlex unavailable.")],
+            execution_trace=events,
             limitations=["Paper metadata service was unavailable."],
         )
 
     root = paper_from_openalex(root_work)
     if root is None:
-        return ResearchCase(status=RetrievalStatus.SOURCE_UNAVAILABLE, limitations=["Paper metadata was incomplete."])
-    events.append(_event("source_tracer", "DONE", "Resolved input paper metadata.", started))
+        await _record(events, ExecutionEvent(agent="source_tracer", status="FAILED", detail="Paper metadata was incomplete."), on_event)
+        return ResearchCase(status=RetrievalStatus.SOURCE_UNAVAILABLE, execution_trace=events, limitations=["Paper metadata was incomplete."])
+    await _record(events, _event("source_tracer", "DONE", "Resolved input paper metadata.", started), on_event)
 
     claim_source = claim_text.strip() if claim_text and claim_text.strip() else root.abstract or ""
+    await _record(events, ExecutionEvent(agent="claim_miner", status="RUNNING", detail="Extracting and ranking verifiable claims."), on_event)
     claims_response = await mine_claims(claim_source, llm)
     source_label = "the user-provided text" if claim_text else "the available paper abstract"
-    events.append(ExecutionEvent(agent="claim_miner", status="DONE", detail=f"Extracted {len(claims_response.claims)} claims from {source_label}."))
+    await _record(events, ExecutionEvent(agent="claim_miner", status="DONE", detail=f"Extracted {len(claims_response.claims)} claims from {source_label}."), on_event)
 
+    await _record(events, ExecutionEvent(agent="source_tracer", status="RUNNING", detail="Following the cited paper's upstream references."), on_event)
     reference_ids = root_work.get("referenced_works")
     selected = reference_ids[:max_references] if isinstance(reference_ids, list) else []
     try:
@@ -118,7 +128,7 @@ async def investigate_paper(
             locator="Cited paper abstract (OpenAlex)",
             evidence_role="direct_cited_paper",
         ))
-    events.append(ExecutionEvent(agent="source_tracer", status="DONE", detail=f"Discovered {len(references)} referenced papers; {len(evidence)} had retrievable abstracts."))
+    await _record(events, ExecutionEvent(agent="source_tracer", status="DONE", detail=f"Discovered {len(references)} referenced papers; {len(evidence)} had retrievable abstracts."), on_event)
 
     arguments = []
     skeptic_arguments = []
@@ -143,7 +153,10 @@ async def investigate_paper(
         # These are independent inspections with separate prompts and outputs. They
         # run sequentially because small local machines cannot reliably host two
         # simultaneous Ollama generations without severe memory contention.
+        await _record(events, ExecutionEvent(agent="evidence_agent", status="RUNNING", detail="Building the strongest evidence-grounded support case."), on_event)
         support = await build_support_argument(target_claim, analysis_evidence, llm)
+        await _record(events, ExecutionEvent(agent="evidence_agent", status="DONE" if support.argument else "FAILED", detail=support.warning or "Built a source-grounded support argument."), on_event)
+        await _record(events, ExecutionEvent(agent="skeptic_agent", status="RUNNING", detail="Independently challenging scope, conditions, and evidence."), on_event)
         skeptic = await build_skeptic_argument(target_claim, analysis_evidence, llm)
         if support.argument:
             arguments.append(support.argument)
@@ -153,8 +166,8 @@ async def investigate_paper(
             usages.append(support.usage)
         if skeptic.usage:
             usages.append(skeptic.usage)
-        events.append(ExecutionEvent(agent="evidence_agent", status="DONE" if support.argument else "FAILED", detail=support.warning or "Built a source-grounded support argument."))
-        events.append(ExecutionEvent(agent="skeptic_agent", status="DONE" if skeptic.argument else "FAILED", detail=skeptic.warning or "Built an independent source-grounded challenge."))
+        await _record(events, ExecutionEvent(agent="skeptic_agent", status="DONE" if skeptic.argument else "FAILED", detail=skeptic.warning or "Built an independent source-grounded challenge."), on_event)
+        await _record(events, ExecutionEvent(agent="judge_agent", status="RUNNING", detail="Comparing both arguments and retrieved evidence."), on_event)
         judged = await judge_claim(
             target_claim, analysis_evidence, support.argument, skeptic.argument, llm
         )
@@ -163,11 +176,11 @@ async def investigate_paper(
         if judged.usage:
             usages.append(judged.usage)
         judge_status = "FALLBACK" if judged.warning and judged.verdict else ("DONE" if judged.verdict else "FAILED")
-        events.append(ExecutionEvent(agent="judge_agent", status=judge_status, detail=judged.warning or "Resolved the agent debate into a verdict."))
+        await _record(events, ExecutionEvent(agent="judge_agent", status=judge_status, detail=judged.warning or "Resolved the agent debate into a verdict."), on_event)
     else:
-        events.append(ExecutionEvent(agent="evidence_agent", status="SKIPPED", detail="No extracted claim was available."))
-        events.append(ExecutionEvent(agent="skeptic_agent", status="SKIPPED", detail="No extracted claim was available."))
-        events.append(ExecutionEvent(agent="judge_agent", status="SKIPPED", detail="No agent arguments were available."))
+        await _record(events, ExecutionEvent(agent="evidence_agent", status="SKIPPED", detail="No extracted claim was available."), on_event)
+        await _record(events, ExecutionEvent(agent="skeptic_agent", status="SKIPPED", detail="No extracted claim was available."), on_event)
+        await _record(events, ExecutionEvent(agent="judge_agent", status="SKIPPED", detail="No agent arguments were available."), on_event)
 
     status = RetrievalStatus.RETRIEVED if root.abstract and evidence else RetrievalStatus.PARTIAL
     ordered_claims = (
@@ -193,6 +206,14 @@ async def investigate_paper(
 
 def _event(agent: str, status: str, detail: str, started: float) -> ExecutionEvent:
     return ExecutionEvent(agent=agent, status=status, detail=detail, duration_ms=round((time.perf_counter() - started) * 1000))
+
+
+async def _record(
+    events: list[ExecutionEvent], event: ExecutionEvent, on_event: EventCallback | None
+) -> None:
+    events.append(event)
+    if on_event is not None:
+        await on_event(event)
 
 
 def select_target_claim(claims: list[Claim]) -> Claim | None:
